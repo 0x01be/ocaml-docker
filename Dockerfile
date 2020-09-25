@@ -1,37 +1,12 @@
-FROM alpine as build
+FROM 0x01be/ocaml:build as build
 
-RUN apk add --no-cache --virtual ocaml-build-dependencies \
-    git \
-    build-base \
-    libx11-dev \
-    libintl \
-    wget \
-    rsync \
-    bubblewrap \
-    bash
+FROM alpine
 
-ENV OCAML_REVISION 4.11.1
-RUN git clone --depth 1 --branch ${OCAML_REVISION} https://github.com/ocaml/ocaml.git /ocaml
+COPY --from=build /opt/ /opt/
+COPY --from=build /root/.opam/ /root/.opam/
 
-WORKDIR /ocaml
+RUN apk add --no-cache --virtual ocaml-runtime-dependencies \
+    libstdc++
 
-RUN ./configure -prefix=/opt/ocaml
-RUN make
-RUN make install
-
-ENV OPAM_REVISION master
-RUN git clone --depth 1 --branch ${OPAM_REVISION} https://github.com/ocaml/opam.git /opam
-
-ENV PATH $PATH:/opt/ocaml/bin/
-
-WORKDIR /opam
-RUN ./configure -prefix=/opt/opam
-RUN make lib-ext
-RUN make
-RUN make install
-
-ENV PATH $PATH:/opt/opam/bin/
-
-RUN opam init -y
-RUN opam install dune -y
+ENV PATH $PATH:/opt/ocaml/bin/:/opt/opam/bin/:/root/.opam/default/bin/
 
